@@ -1,4 +1,4 @@
-const CACHE='acklla-v23';
+const CACHE='acklla-v24';
 const ARQ=['./','index.html','manifest.webmanifest','icone-180.png','icone-192.png','icone-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ARQ)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});

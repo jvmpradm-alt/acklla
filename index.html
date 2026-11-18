@@ -152,7 +152,7 @@ const NOTAS_PENDENTES=[{"id": "ajuste-estoque-0810", "auto": true, "titulo": "Aj
 const DEF_CFG={taxaCartao:0.11,markupGrupo:{Premium:2.3,'Básico':2,Infantil:2,Semijoia:2,Outro:2},arred:true,prazoBase:'vista',descontoMax:0.05,caixasPct:{Despesas:0.35,Reserva:0.30,'Pró-labore':0.25,Marketing:0.10},proLabore:0,mixCartao:0.5,saldoInicial:1264.94,taxa6x:0.07,taxaVista:0.035,multPix:1.9,multBase:2,mult6x:2.15,metaMin:1400,metaMes:3000,parcela:339.82,parcelasTotal:6,diasSumida:45,limitePrazo:300,maxParcelasPrazo:3,bonusIndicacao:10,diasPosVenda:3,acrescimoPrazo:0,linkCatalogo:'',reservaMin:300,despFixas:332.05,nfsImportadas:[],waBusiness:true,whatsLoja:'',instaLoja:''};
 const COLS=['produtos','clientes','vendas','encomendas','lancamentos','interacoes','contas'];
 const S={cfg:{...DEF_CFG},produtos:[],clientes:[],vendas:[],encomendas:[],lancamentos:[],interacoes:[],contas:[]};
-const APP_VERSAO='2026.10.04';
+const APP_VERSAO='2026.11.18 (v24)';
 const CUSTO_NF={"l35": 89.9, "l25": 84.9, "l38": 49.9, "l14": 42.32, "l24": 72.9, "l09": 23.94, "l10": 44.9, "l12": 26.32, "l19": 30.03, "l04": 58.9, "l06": 49.9, "l08": 26.9, "l17": 38.9, "l13": 42.32, "l32": 39.9, "l36": 66.9, "l02": 68.9, "l07": 26.9, "l30": 39.9, "l26": 36.9, "l11": 26.32, "l01": 39.9, "l37": 104.9, "l15": 42.32, "l27": 36.9, "l03": 58.9, "l18": 30.03, "l20": 30.03, "l16": 88.9, "l05": 49.9, "l22": 63.9, "l34": 72.17, "l29": 46.9, "l28": 129.9, "l31": 39.9, "l21": 72.9, "l23": 72.9, "l33": 46.9};
 const WHATS_CLIENTES={};
 let DB=null, modo='local', tab='inicio', sub={ped:'Em aberto',pedPer:'Tudo',vender:'venda',estoque:'Todos',clientes:'Todas',crm:'Hoje',crmTag:''}, cart={itens:[],clienteId:'',pag:'PIX',desc:'',entrada:'',nparc:2,venc:''};
@@ -383,7 +383,7 @@ function recebido(v){if(!temPrazo(v))return num(v.liquido);return num(v.aVista!=
 function abertas(){const out=[];S.vendas.forEach(v=>{if(temPrazo(v))(v.receber||[]).forEach(p=>{const s=saldoParc(p);if(s>0.004)out.push({v,p,saldo:s,cl:cliente(v.clienteId),dias:diasEntre(dISO(hoje())+'T12:00:00',dVenc(p.venc))})})});return out.sort((a,b)=>a.p.venc.localeCompare(b.p.venc))}
 const deveCliente=id=>Math.round(abertas().filter(x=>x.v.clienteId===id).reduce((a,x)=>a+x.saldo,0)*100)/100;
 const vencidaCliente=id=>abertas().some(x=>x.v.clienteId===id&&x.dias<0);
-function parcelasPrazo(total,entrada,n,venc1){const resto=Math.max(0,total-entrada);const base=Math.floor(resto/n*100)/100;const out=[];for(let i=0;i<n;i++){const val=i===n-1?Math.round((resto-base*(n-1))*100)/100:base;out.push({n:i+1,de:n,venc:dISO(addDias(dVenc(venc1),30*i)),valor:val,pago:false})}return out}
+function parcelasPrazo(total,entrada,n,venc1){const resto=Math.max(0,total-entrada);const base=Math.floor(resto/n*100)/100;const out=[];for(let i=0;i<n;i++){const val=i===n-1?Math.round((resto-base*(n-1))*100)/100:base;out.push({n:i+1,de:n,venc:dISO(num(S.cfg.diaVencPrazo)?addMeses(dVenc(venc1),i):addDias(dVenc(venc1),30*i)),valor:val,pago:false})}return out}
 function receberParcela(vid,n){const v=S.vendas.find(x=>x.id===vid);if(!v)return;const p=(v.receber||[]).find(x=>x.n===n);if(!p)return;formPagamento(v.clienteId,saldoParc(p))}
 function formPagamento(cid,sug){const c=cliente(cid);if(!c){toast('Venda sem cliente cadastrada');return}const deve=deveCliente(cid);
  openSheet(`<h2>Receber de ${esc(primeiro(c.nome))}</h2>
@@ -538,7 +538,8 @@ function vEstoque(){
     ${ps.length?ps.map(p=>{const g=giro(p);return `<div class="item" onclick="formProduto('${p.id}')" style="cursor:pointer">
       ${p.foto?`<img src="${p.foto}" alt="" loading="lazy" style="width:52px;height:52px;border-radius:10px;object-fit:cover;flex:none">`:`<span class="dot" style="background:var(--${p.cat==='Semijoia'?'gold':p.cat==='Lingerie'?'berry':'muted'})"></span>`}
       <div class="grow"><div class="t">${esc(p.nome)}</div>
-      <div class="m">${p.ref?'Ref '+esc(p.ref)+' · ':''}nota ${brl(custoNota(p))} · ${grupoDe(p)} ${String(markupDe(p)).replace('.',',')}x${p.cor?' · '+esc(p.cor):(!p.tamanho&&p.tam?' · '+esc(p.tam):'')}</div>
+      <div class="m">${p.ref?'Ref '+esc(p.ref)+' · ':''}${grupoDe(p)} ${String(markupDe(p)).replace('.',',')}x${p.cor?' · '+esc(p.cor):(!p.tamanho&&p.tam?' · '+esc(p.tam):'')}</div>
+      ${(()=>{const o=custoNota(p),pg=num(p.custo)||o,d=o>pg+0.004?(1-pg/o):0,px=precoPix(p),mx=px>0?1-num(S.cfg.multPix||1.9)*pg/px:0,rv=num(S.cfg.multRevenda)&&p.cat!=='Semijoia'?arred(pg*num(S.cfg.multRevenda)):0,c=campanhaDe(p);return `<div class="m" style="margin-top:3px">${d?`Tabela <s>${brl(o)}</s> · <b style="color:var(--text)">Pago ${brl(pg)}</b> <span class="tag gray" style="margin-left:2px">−${Math.round(d*100)}% na compra</span>`:`<b style="color:var(--text)">Pago ${brl(pg)}</b>`}</div><div class="m">Real ${(px/pg).toFixed(2).replace('.',',')}x sobre o pago${mx>0.004?` · <span style="color:#7fd1a0">desconto até ${Math.floor(mx*100)}%</span>`:''}</div>${rv?`<div class="m">Revendedora ${brl(rv)}</div>`:''}${c?`<div style="margin-top:3px"><span class="tag ${c.ativa?'warn':'gray'}">${esc(c.nome)} −${c.pctEf}%: ${brl(c.preco)}${c.ativa?'':' · de '+dataBR(dVenc(c.ini))+' a '+dataBR(dVenc(c.fim))}</span></div>`:''}`})()}
       <div style="margin-top:4px">${p.tamanho?`<span class="tag gold">${esc(p.tamanho)}</span>`:''}${num(p.qtd)<=0?'<span class="tag warn">Esgotado</span>':`<span class="tag gray">${num(p.qtd)} un</span>`}${g?`<span class="tag ${g[1]}">${g[0]}</span>`:''}${p.conferir?'<span class="tag warn">Conferir</span>':''}</div></div>
       <div class="r"><div class="t money">${brl(precoPix(p))}</div><div class="m">à vista</div><div class="m money">cartão ${brl(precoCartao(p))}</div><div class="m money">6x ${brl(precoCartao(p)/6)}</div></div></div>`}).join('')
       :`<div class="empty">${S.produtos.length?'Nenhum produto com esse filtro.':'Cadastre as peças da lingerie e das semijoias para começar a vender.'}</div>`}
@@ -883,7 +884,7 @@ function divBox(t){
   </div>`;
 }
 function prazoBox(t){
-  if(!cart.venc)cart.venc=dISO(addDias(hoje(),30));
+  if(!cart.venc)cart.venc=vencPadrao();
   const n=Math.max(1,Math.min(S.cfg.maxParcelasPrazo,Number(cart.nparc)||1));
   const ps=parcelasPrazo(t.prazo,0,n,cart.venc);const cid=cart.clienteId;
   const deve=cid?deveCliente(cid):0,venc=cid&&vencidaCliente(cid);const pagoHoje=t.total-t.prazo;
@@ -901,11 +902,14 @@ function prazoBox(t){
    ${avisos.map(a=>`<p class="note" style="color:var(--warn);margin-top:6px">${esc(a)}</p>`).join('')}
   </div>`;
 }
+function campanhaDe(p){const cs=S.cfg.campanhas||[];const d=dISO(hoje());for(const c of cs){if(!c||!c.pct||d>c.fim)continue;if(c.excluiCat&&c.excluiCat.includes(p.cat))continue;if(c.nf&&!String(p.nf||'').includes(c.nf))continue;const pg=num(p.custo)||custoNota(p),px=precoPix(p);const mx=px>0?Math.floor((1-num(S.cfg.multPix||1.9)*pg/px)*100):0;const pct=Math.max(0,Math.min(num(c.pct),mx));if(!pct)continue;return {...c,pctEf:pct,ativa:d>=c.ini&&d<=c.fim,preco:Math.round(px*(1-pct/100)*100)/100}}return null}
+function addMeses(d,n){const x=new Date(d);const dia=x.getDate();x.setDate(1);x.setMonth(x.getMonth()+n);const ult=new Date(x.getFullYear(),x.getMonth()+1,0).getDate();x.setDate(Math.min(dia,ult));return x}
+function vencPadrao(){const dia=num(S.cfg.diaVencPrazo)||0;if(!dia)return dISO(addDias(hoje(),30));const min=addDias(hoje(),20);let x=new Date(hoje());x.setDate(1);x.setDate(Math.min(dia,28));while(x<min){x=addMeses(x,1)}return dISO(x)}
 function precoItem(i,p){return i.preco!=null?num(i.preco):precoPag(p,cart.pag)}
 function descLinha(i,p){const s=String(i.desc||'').trim();if(!s)return 0;const base=precoItem(i,p)*i.qtd;let d=s.endsWith('%')?base*num(s.slice(0,-1))/100:num(s);return Math.round(Math.min(Math.max(d,0),base)*100)/100}
 function descCart(pid,v){const i=cart.itens.find(x=>x.pid===pid);if(!i)return;i.desc=String(v).trim().replace(/\s/g,'');render()}
 function precoCart(pid,v){const i=cart.itens.find(x=>x.pid===pid);if(!i)return;if(!String(v).trim())delete i.preco;else i.preco=Math.max(0,Math.round(num(v)*100)/100);render()}
-function addCart(pid){const p=S.produtos.find(x=>x.id===pid);const i=cart.itens.find(x=>x.pid===pid);if(i){if(i.qtd<num(p.qtd))i.qtd++;else toast('Sem mais unidades em estoque')}else cart.itens.push({pid,qtd:1});render()}
+function addCart(pid){const p=S.produtos.find(x=>x.id===pid);const i=cart.itens.find(x=>x.pid===pid);if(i){if(i.qtd<num(p.qtd))i.qtd++;else toast('Sem mais unidades em estoque')}else{const c=campanhaDe(p);cart.itens.push(c&&c.ativa?{pid,qtd:1,desc:c.pctEf+'%'}:{pid,qtd:1});if(c&&c.ativa)toast(c.nome+': '+c.pctEf+'% aplicado')}render()}
 function qtyCart(pid,d){const p=S.produtos.find(x=>x.id===pid);const i=cart.itens.find(x=>x.pid===pid);if(!i)return;i.qtd+=d;if(i.qtd>num(p.qtd)){i.qtd=num(p.qtd);toast('Limite do estoque')}if(i.qtd<=0)cart.itens=cart.itens.filter(x=>x!==i);render()}
 function calcCart(){let bruto=0,custo=0;cart.itens.forEach(i=>{const p=S.produtos.find(x=>x.id===i.pid);if(!p)return;bruto+=precoItem(i,p)*i.qtd;custo+=num(p.custo)*i.qtd});bruto=Math.round(bruto*100)/100;
  let dItens=0;cart.itens.forEach(i=>{const p=S.produtos.find(x=>x.id===i.pid);if(p)dItens+=descLinha(i,p)});dItens=Math.round(dItens*100)/100;
@@ -931,7 +935,7 @@ function fecharVenda(){
   let avisoInd='';
   if(cli0&&t.credUse>0){v.creditoUsado=t.credUse;saveItem('clientes',{...cli0,credito:Math.max(0,Math.round((num(cli0.credito)-t.credUse)*100)/100)})}
   if(primeira&&cli0.indicadaPor&&num(S.cfg.bonusIndicacao)>0){const ref=cliente(cli0.indicadaPor);if(ref){saveItem('clientes',{...ref,credito:num(ref.credito)+num(S.cfg.bonusIndicacao)});v.bonusIndicacao={para:ref.id,valor:num(S.cfg.bonusIndicacao)};registrarInter(ref.id,'Outro','Ganhou '+brl(S.cfg.bonusIndicacao)+' por indicar '+cli0.nome);avisoInd=ref.id}}
-  if(t.prazo>0){v.aVista=Math.round(t.aVista*100)/100;v.entrada=Math.round((t.total-t.prazo)*100)/100;v.receber=parcelasPrazo(t.prazo,0,Math.max(1,Math.min(S.cfg.maxParcelasPrazo,Number(cart.nparc)||1)),cart.venc||dISO(addDias(hoje(),30)))}
+  if(t.prazo>0){v.aVista=Math.round(t.aVista*100)/100;v.entrada=Math.round((t.total-t.prazo)*100)/100;v.receber=parcelasPrazo(t.prazo,0,Math.max(1,Math.min(S.cfg.maxParcelasPrazo,Number(cart.nparc)||1)),cart.venc||vencPadrao())}
   saveItem('vendas',v);
   itens.forEach(i=>{const p=S.produtos.find(x=>x.id===i.pid);saveItem('produtos',{...p,qtd:Math.max(0,num(p.qtd)-i.qtd)})});
   const cl=cliente(v.clienteId);
