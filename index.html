@@ -323,7 +323,11 @@ const ceilP=(v,step)=>v<=0?0:Math.ceil(v/step)*step-0.1;
 const custoNota=p=>(p.custoNF!=null&&p.custoNF!=='')?num(p.custoNF):num(p.custo);
 const arred=v=>{v=Math.round(num(v)*100)/100;if(v<=0)return 0;return S.cfg.arred===false?v:Math.round((Math.ceil(v+0.1-1e-9)-0.1)*100)/100};
 const GRUPOS=['Premium','Básico','Infantil','Semijoia','Outro'];
-function grupoAuto(p){if(p.cat==='Semijoia')return 'Semijoia';if(p.cat!=='Lingerie')return 'Outro';const n=String(p.nome||'');if(/infantil|kids|baby(?! doll)|menina|hero[ií]nas|moranguinhas|reino|fruit/i.test(n))return 'Infantil';if(/baby doll|conjunto|short doll|camisola|trio/i.test(n))return 'Premium';return 'Básico'}
+const CATS=['Lingerie','Masculino','Infantil','Semijoia','Acessórios'];
+const catNome=c=>({Lingerie:'Lingerie feminina',Masculino:'Masculino',Infantil:'Infantil',Semijoia:'Semijoias','Acessórios':'Acessórios',Outro:'Acessórios'})[c]||c;
+const catEmoji=c=>({Lingerie:'🌸',Masculino:'👔',Infantil:'🧸',Semijoia:'💎'})[c]||'✨';
+function catAuto(nome,cat){if(cat==='Semijoia')return 'Semijoia';if(cat==='Outro'||cat==='Acessórios')return 'Acessórios';const n=String(nome||'');if(/infantil|kids|baby(?! doll)|hero[ií]nas|moranguinhas|reino m|fruit|girafinhas|rabiscos|happy boy/i.test(n))return 'Infantil';if(/cueca|sunga|masculin|^kit box/i.test(n))return 'Masculino';return 'Lingerie'}
+function grupoAuto(p){if(p.cat==='Semijoia')return 'Semijoia';if(p.cat==='Infantil')return 'Infantil';if(p.cat!=='Lingerie'&&p.cat!=='Masculino')return 'Outro';const n=String(p.nome||'');if(/infantil|kids|baby(?! doll)|menina|hero[ií]nas|moranguinhas|reino|fruit/i.test(n))return 'Infantil';if(/baby doll|conjunto|short doll|camisola|trio/i.test(n))return 'Premium';return 'Básico'}
 const grupoDe=p=>GRUPOS.includes(p.grupo)?p.grupo:grupoAuto(p);
 const markupDe=p=>num((S.cfg.markupGrupo||{})[grupoDe(p)])||2;
 const fatorCartao=()=>1/(1-Math.min(0.9,num(S.cfg.taxaCartao)));
@@ -510,7 +514,7 @@ function gradeModelos(ps){const g={};ps.forEach(p=>{const k=(p.ref||'')+'|'+p.no
 function vEstoque(){
   const f=sub.estoque;const q=(window._qe||'').toLowerCase();
   let ps=S.produtos.slice().sort((a,b)=>(num(b.qtd)>0)-(num(a.qtd)>0)||String(a.nome).localeCompare(b.nome));
-  if(f!=='Todos'&&f!=='Repor')ps=ps.filter(p=>p.cat===f);
+  if(f!=='Todos'&&f!=='Repor')ps=ps.filter(p=>(p.cat==='Outro'?'Acessórios':p.cat)===f);
   if(q)ps=ps.filter(p=>(p.nome+' '+(p.ref||'')+' '+(p.cor||'')).toLowerCase().includes(q));
   const ft=sub.etam||'Todos';if(ft!=='Todos')ps=ps.filter(p=>(p.tamanho||'Sem tamanho')===ft);
   const tamsEst=[...new Set(S.produtos.filter(p=>num(p.qtd)>0).map(p=>p.tamanho||'Sem tamanho'))].sort((a,b)=>ordemTam(a)-ordemTam(b));
@@ -524,7 +528,7 @@ function vEstoque(){
     <div class="m" style="margin-top:10px">Peças por tamanho</div>
     <div class="chips" style="margin-top:6px">${porTam.map(([t,n])=>`<span class="tag gray" style="font-size:13px;padding:4px 10px">${esc(t)} · ${n}</span>`).join('')}</div>
   </section>
-  <div class="seg c">${['Todos','Lingerie','Semijoia','Outro','Repor'].map(x=>`<button class="${f===x?'on':''}" onclick="sub.estoque='${x}';render()">${x}</button>`).join('')}</div>
+  <div class="seg c" style="flex-wrap:wrap">${['Todos',...CATS,'Repor'].map(x=>`<button class="${f===x?'on':''}" onclick="sub.estoque='${x}';render()">${x==='Lingerie'?'Lingerie':x==='Semijoia'?'Semijoias':x}</button>`).join('')}</div>
   ${f==='Repor'?vReposicao():`
   <div class="chips" style="margin-bottom:10px">${['Todos',...tamsEst].map(t=>`<button class="${ft===t?'on':''}" onclick="sub.etam='${esc(t)}';render()">${t==='Todos'?'Todos os tamanhos':esc(t)}</button>`).join('')}<button class="${sub.egrade?'on':''}" onclick="sub.egrade=!sub.egrade;render()">Grade por modelo</button></div>
   ${sub.egrade?gradeModelos(ps):''}
@@ -552,7 +556,7 @@ function formProduto(id){
   <div style="display:flex;gap:12px;align-items:center;margin:4px 0 6px"><div id="pfoto" style="width:88px;height:88px;border-radius:12px;background:var(--bg);border:1px solid var(--line);overflow:hidden;display:flex;align-items:center;justify-content:center;flex:none">${caixaFoto(p.foto)}</div>
   <div style="display:flex;flex-direction:column;gap:6px;flex:1"><label class="btn small" style="cursor:pointer">${p.foto?'Trocar foto':'Tirar ou escolher foto'}<input type="file" accept="image/*" style="display:none" onchange="escolherFoto(this)"></label>${p.foto?`<button class="btn small ghost" onclick="removerFotoForm()">Remover foto</button>`:''}</div></div>
   <label class="f">Nome</label><input class="i" id="pn" value="${esc(p.nome||'')}" placeholder="Ex.: Conjunto renda preto">
-  <div class="grid2"><div><label class="f">Categoria</label><select class="i" id="pc">${['Lingerie','Semijoia','Outro'].map(c=>`<option ${p.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
+  <div class="grid2"><div><label class="f">Categoria</label><select class="i" id="pc">${CATS.map(c=>`<option value="${c}" ${(p.cat==='Outro'?'Acessórios':p.cat)===c?'selected':''}>${catNome(c)}</option>`).join('')}</select></div>
   <div><label class="f">Referência</label><input class="i" id="pr" value="${esc(p.ref||'')}"></div></div>
   ${(()=>{const sx=separarTam(p);const outro=sx.tamanho&&!TAMANHOS.includes(sx.tamanho);return `<label class="f">Tamanho</label><div class="chips" id="ptam_chips">${TAMANHOS.map(t=>`<button type="button" class="${sx.tamanho===t?'on':''}" onclick="escolherTam(this,'${t}')">${t}</button>`).join('')}<button type="button" class="${outro?'on':''}" onclick="escolherTam(this,'outro')">Aro ou outro</button></div>
   <input type="hidden" id="ptam" value="${esc(sx.tamanho)}"><input class="i" id="ptam_o" style="margin-top:6px;${outro?'':'display:none'}" value="${esc(outro?sx.tamanho:'')}" placeholder="Ex.: Aro 16, 4 anos">
@@ -583,9 +587,9 @@ function salvarProduto(id){const f=lerProdutoForm();if(!f.nome){toast('Informe o
 function legendaInsta(){
   const ps=S.produtos.filter(p=>num(p.qtd)>0);
   if(!ps.length){toast('Nenhum produto em estoque');return}
-  const bloco=cat=>{const l=ps.filter(p=>p.cat===cat);return l.length?`\n${cat==='Semijoia'?'💎 Semijoias':cat==='Lingerie'?'🌸 Lingerie':'✨ Outros'}\n`+l.map(p=>`• ${p.nome}${p.tam?' ('+p.tam+')':''}: ${brl(precoPix(p))} no PIX`).join('\n')+'\n':''};
+  const bloco=cat=>{const l=ps.filter(p=>p.cat===cat);return l.length?`\n${catEmoji(cat)} ${catNome(cat)}\n`+l.map(p=>`• ${p.nome}${p.tam?' ('+p.tam+')':''}: ${brl(precoPix(p))} no PIX`).join('\n')+'\n':''};
   const w=waNum(S.cfg.whatsLoja);
-  const t=`✨ Novidades ACKLLA Intimates ✨\nSeu brilho, sua essência, sua escolha.\n${bloco('Lingerie')}${bloco('Semijoia')}\nParcelamos em até 6x no cartão.\n${w?'Peça pelo WhatsApp: wa.me/'+w:'Peça pelo Direct ou WhatsApp.'}\n\n#ackllaintimates #lingerie #modaintima #semijoias #japaratinga #alagoas`;
+  const t=`✨ Novidades ACKLLA Intimates ✨\nSeu brilho, sua essência, sua escolha.\n${CATS.map(bloco).join('')}\nParcelamos em até 6x no cartão.\n${w?'Peça pelo WhatsApp: wa.me/'+w:'Peça pelo Direct ou WhatsApp.'}\n\n#ackllaintimates #lingerie #modaintima #semijoias #japaratinga #alagoas`;
   copiarTexto(t);toast('Legenda copiada. Cole no Instagram.');
   abrirLink(igUser(S.cfg.instaLoja)?igPerfil(S.cfg.instaLoja):'https://www.instagram.com/');
 }
@@ -631,8 +635,8 @@ function enviarProduto(id){const p=S.produtos.find(x=>x.id===id);if(!p)return;
   abrirLink('https://wa.me/?text='+encodeURIComponent(legendaProduto(p)))}
 
 /* vitrine com fotos */
-function textoVitrine(ps){const bloco=cat=>{const l=ps.filter(p=>p.cat===cat);return l.length?`\n*${cat==='Semijoia'?'Semijoias':cat}*\n`+l.map(p=>`• ${p.nome}${p.tam?' ('+p.tam+')':''}: ${brl(precoPix(p))} no PIX ou 6x de ${brl(preco6x(p)/6)}`).join('\n')+'\n':''};
-  return `✨ *ACKLLA Intimates* ✨\nPeças disponíveis hoje:\n${bloco('Lingerie')}${bloco('Semijoia')}${bloco('Outro')}\nResponda com o nome da peça que eu separo pra você.\n🚚 *Entrega grátis em Japaratinga, Maragogi e Porto Calvo*, direto na sua casa.`+(S.cfg.linkCatalogo?`\n\nVeja todas as peças com foto: ${S.cfg.linkCatalogo}`:'')+(waNum(S.cfg.whatsLoja)?`\nCatálogo no WhatsApp: https://wa.me/c/${waNum(S.cfg.whatsLoja)}`:'')}
+function textoVitrine(ps){const bloco=cat=>{const l=ps.filter(p=>(p.cat==='Outro'?'Acessórios':p.cat)===cat);return l.length?`\n*${catNome(cat)}*\n`+l.map(p=>`• ${p.nome}${p.tam?' ('+p.tam+')':''}: ${brl(precoPix(p))} no PIX ou 6x de ${brl(preco6x(p)/6)}`).join('\n')+'\n':''};
+  return `✨ *ACKLLA Intimates* ✨\nPeças disponíveis hoje:\n${CATS.map(bloco).join('')}\nResponda com o nome da peça que eu separo pra você.\n🚚 *Entrega grátis em Japaratinga, Maragogi e Porto Calvo*, direto na sua casa.`+(S.cfg.linkCatalogo?`\n\nVeja todas as peças com foto: ${S.cfg.linkCatalogo}`:'')+(waNum(S.cfg.whatsLoja)?`\nCatálogo no WhatsApp: https://wa.me/c/${waNum(S.cfg.whatsLoja)}`:'')}
 function vitrineTexto(){const ps=S.produtos.filter(p=>num(p.qtd)>0);if(!ps.length){toast('Nenhum produto em estoque para enviar');return}closeSheet();abrirLink('https://wa.me/?text='+encodeURIComponent(textoVitrine(ps)))}
 function shareVitrine(){
   const ps=S.produtos.filter(p=>num(p.qtd)>0);if(!ps.length){toast('Nenhum produto em estoque para enviar');return}
@@ -661,7 +665,7 @@ function sheetCatalogo(){const c=S.cfg;
   <p class="note">Depois de gerar, envie o arquivo index.html para o repositório do catálogo no GitHub (Add file, Upload files, Commit changes). Em 1 minuto o link mostra a versão nova. Faça isso sempre que entrar ou acabar peça.</p>
   <div class="acts"><button class="btn primary" onclick="closeSheet()">Fechar</button></div>`)}
 function gerarCatalogo(){
-  const ps=S.produtos.filter(p=>num(p.qtd)>0).sort((a,b)=>String(a.cat).localeCompare(b.cat)||String(a.nome).localeCompare(b.nome));
+  const ps=S.produtos.filter(p=>num(p.qtd)>0).map(p=>p.cat==='Outro'?{...p,cat:'Acessórios'}:p).sort((a,b)=>CATS.indexOf(a.cat)-CATS.indexOf(b.cat)||String(a.nome).localeCompare(b.nome));
   if(!ps.length){toast('Nenhuma peça em estoque');return}
   const w=waNum(S.cfg.whatsLoja)||'5582998098750',ig=igUser(S.cfg.instaLoja)||'ackllabuarque';
   const e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -681,7 +685,7 @@ main{max-width:1100px;margin:0 auto;padding:0 16px 40px;display:grid;grid-templa
 .entrega{display:inline-flex;flex-direction:column;align-items:center;gap:3px;margin-top:18px;border:1px solid #B98246;border-radius:14px;padding:10px 20px;background:rgba(214,161,94,.08)}.entrega b{font:600 13px Cinzel,serif;letter-spacing:.25em;color:#E6BD7A;text-transform:uppercase}.entrega span{font-weight:600;font-size:14px;letter-spacing:.06em;color:#F2E4CF}.entrega small{font-size:12px;color:#AE9679}
 footer{text-align:center;color:#AE9679;font-size:13px;padding:0 16px 40px;line-height:1.7}footer a{color:#E6BD7A}
 </style></head><body><header><h1>ACKLLA</h1><div class="sub">INTIMATES</div><div class="frase">Seu brilho, sua essência, sua escolha.</div><div class="entrega"><b>Entrega grátis</b><span>Japaratinga · Maragogi · Porto Calvo</span><small>Direto na sua casa. Peça pelo WhatsApp.</small></div></header>
-<nav>${['Todas',...cats].map((c,i)=>`<button class="${i===0?'on':''}" onclick="filtrar(this,'${e(c)}')">${e(c==='Semijoia'?'Semijoias':c==='Outro'?'Outros':c)}</button>`).join('')}</nav>
+<nav>${['Todas',...cats].map((c,i)=>`<button class="${i===0?'on':''}" onclick="filtrar(this,'${e(c)}')">${e(c==='Todas'?c:catNome(c))}</button>`).join('')}</nav>
 <main>${cards}</main>
 <footer>Preços no PIX. Parcelamos em até 6x no cartão.<br><b style="color:#E6BD7A">Entrega grátis em Japaratinga, Maragogi e Porto Calvo.</b><br><a href="https://wa.me/${w}">WhatsApp (${w.slice(2,4)}) ${w.slice(4,9)}-${w.slice(9)}</a> · <a href="https://www.instagram.com/${e(ig)}/">Instagram @${e(ig)}</a><br>Atualizado em ${hj}</footer>
 <script>function filtrar(b,c){document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('.card').forEach(x=>{x.style.display=c==='Todas'||x.dataset.cat===c?'':'none'})}<\/script></body></html>`;
@@ -813,8 +817,8 @@ function previaNota(){const j=_nota;const its=j.itens.map((x,i)=>({...x,qtd:Math
   <input class="i" id="nt_v" inputmode="decimal" style="margin-top:6px" value="${(tot||soma).toFixed(2).replace('.',',')}" aria-label="Valor pago">
   <p class="note">Marque só se pagou à vista (PIX ou dinheiro). Compra parcelada no cartão: registre cada parcela quando pagar.</p>
   <div class="acts"><button class="btn ghost" onclick="closeSheet()">Cancelar</button><button class="btn primary" onclick="confirmarNota()">Adicionar ao estoque</button></div>`)}
-function confirmarNota(){const j=_nota;const cats=['Lingerie','Semijoia','Outro'];
-  const lista=j.itens.filter((x,i)=>_notaSel[i]&&num(x.qtd)>0).map(x=>({nome:String(x.nome||'Peça').trim(),cat:cats.includes(x.cat)?x.cat:'Lingerie',ref:String(x.ref||'').trim(),tam:String(x.tam||'').trim(),qtd:Math.round(num(x.qtd)),custo:Math.round(num(x.custo)*100)/100,nf:(j.fornecedor||'')+' '+(j.numero||''),conferir:false}));
+function confirmarNota(){const j=_nota;const cats=['Lingerie','Semijoia','Outro','Masculino','Infantil','Acessórios'];
+  const lista=j.itens.filter((x,i)=>_notaSel[i]&&num(x.qtd)>0).map(x=>({nome:String(x.nome||'Peça').trim(),cat:catAuto(x.nome,cats.includes(x.cat)?x.cat:'Lingerie'),ref:String(x.ref||'').trim(),tam:String(x.tam||'').trim(),qtd:Math.round(num(x.qtd)),custo:Math.round(num(x.custo)*100)/100,nf:(j.fornecedor||'')+' '+(j.numero||''),conferir:false}));
   if(!lista.length){toast('Nenhum item marcado');return}
   const r=importarProdutos(lista);
   const cx=document.getElementById('nt_cx');if(cx&&cx.checked){const v=num(val('nt_v'));if(v>0)saveItem('lancamentos',{id:uid(),data:new Date().toISOString(),tipo:'saida',categoria:'Reposição de estoque',valor:v,desc:'Nota '+(j.numero||'')+' '+(j.fornecedor||'')})}
@@ -1188,6 +1192,8 @@ const MODELOS_CAMP={
 function segmentos(){
   const L={'Todas':c=>true,'Clientes':c=>statsCliente(c).compras>0,'Leads e negociando':c=>!statsCliente(c).compras&&estagio(c)!=='Perdido','VIP':c=>statsCliente(c).tipo==='VIP','Sumidas':c=>statsCliente(c).sumida,'Aniversário do mês':aniverMes,'Com crédito':c=>num(c.credito)>0,
   'Compraram lingerie':c=>statsCliente(c).vs.some(v=>(v.itens||[]).some(i=>(S.produtos.find(p=>p.id===i.pid)||{}).cat==='Lingerie')),
+  'Compraram masculino':c=>statsCliente(c).vs.some(v=>(v.itens||[]).some(i=>(S.produtos.find(p=>p.id===i.pid)||{}).cat==='Masculino')),
+  'Compraram infantil':c=>statsCliente(c).vs.some(v=>(v.itens||[]).some(i=>(S.produtos.find(p=>p.id===i.pid)||{}).cat==='Infantil')),
   'Compraram semijoia':c=>statsCliente(c).vs.some(v=>(v.itens||[]).some(i=>(S.produtos.find(p=>p.id===i.pid)||{}).cat==='Semijoia'))};
   todasTags().forEach(t=>L['Etiqueta: '+t]=c=>tagsDe(c).includes(t));
   return L;
