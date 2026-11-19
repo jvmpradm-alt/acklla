@@ -326,7 +326,7 @@ const GRUPOS=['Premium','Básico','Infantil','Semijoia','Outro'];
 const CATS=['Lingerie','Masculino','Infantil','Semijoia','Acessórios'];
 const catNome=c=>({Lingerie:'Lingerie feminina',Masculino:'Masculino',Infantil:'Infantil',Semijoia:'Semijoias','Acessórios':'Acessórios',Outro:'Acessórios'})[c]||c;
 const catEmoji=c=>({Lingerie:'🌸',Masculino:'👔',Infantil:'🧸',Semijoia:'💎'})[c]||'✨';
-function catAuto(nome,cat){if(cat==='Semijoia')return 'Semijoia';if(cat==='Outro'||cat==='Acessórios')return 'Acessórios';const n=String(nome||'');if(/infantil|kids|baby(?! doll)|hero[ií]nas|moranguinhas|reino m|fruit|girafinhas|rabiscos|happy boy/i.test(n))return 'Infantil';if(/cueca|sunga|masculin|^kit box/i.test(n))return 'Masculino';return 'Lingerie'}
+function catAuto(nome,cat){if(cat==='Semijoia')return 'Semijoia';if(cat==='Outro'||cat==='Acessórios')return 'Acessórios';const n=String(nome||'');if(/infantil|kids|baby(?! doll)|hero[ií]nas|moranguinhas|reino m|fruit|girafinhas|rabiscos|happy boy|calças silk/i.test(n))return 'Infantil';if(/cueca|sunga|masculin|^kit box/i.test(n))return 'Masculino';return 'Lingerie'}
 function grupoAuto(p){if(p.cat==='Semijoia')return 'Semijoia';if(p.cat==='Infantil')return 'Infantil';if(p.cat!=='Lingerie'&&p.cat!=='Masculino')return 'Outro';const n=String(p.nome||'');if(/infantil|kids|baby(?! doll)|menina|hero[ií]nas|moranguinhas|reino|fruit/i.test(n))return 'Infantil';if(/baby doll|conjunto|short doll|camisola|trio/i.test(n))return 'Premium';return 'Básico'}
 const grupoDe=p=>GRUPOS.includes(p.grupo)?p.grupo:grupoAuto(p);
 const markupDe=p=>num((S.cfg.markupGrupo||{})[grupoDe(p)])||2;
