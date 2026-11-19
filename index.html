@@ -625,14 +625,14 @@ function removerFotoForm(){window._pfoto='';const el=document.getElementById('pf
 function gravarFoto(id,dataUrl){if(!dataUrl)return '';if(temFotoNativa()){try{const u=AndroidApp.salvarFoto(id,dataUrl.split(',')[1]);if(u)return String(u)}catch(e){}}return dataUrl}
 function apagarFotoProd(id){if(temFotoNativa()){try{AndroidApp.apagarFoto(id)}catch(e){}}}
 function fotoDataUrl(p){if(!p||!p.foto)return '';if(String(p.foto).startsWith('data:'))return p.foto;if(window.AndroidApp&&typeof AndroidApp.fotoBase64==='function'){try{const b=AndroidApp.fotoBase64(p.id);if(b)return 'data:image/jpeg;base64,'+b}catch(e){}}return ''}
-const legendaProduto=p=>`✨ *${p.nome}*${p.tam?' ('+p.tam+')':''}\n${brl(precoPix(p))} no PIX ou 6x de ${brl(preco6x(p)/6)} no cartão\nACKLLA Intimates${S.cfg.linkCatalogo?'\nVeja todas as peças: '+S.cfg.linkCatalogo:''}`;
+const legendaProduto=p=>`✨ *${p.nome}*${p.tam?' ('+p.tam+')':''}\n${brl(precoPix(p))} no PIX ou 6x de ${brl(preco6x(p)/6)} no cartão\nACKLLA Intimates\n🚚 Entrega grátis em Japaratinga, Maragogi e Porto Calvo${S.cfg.linkCatalogo?'\nVeja todas as peças: '+S.cfg.linkCatalogo:''}`;
 function enviarProduto(id){const p=S.produtos.find(x=>x.id===id);if(!p)return;
   if(p.foto&&podeEnviarFotos()){copiarTexto(legendaProduto(p));AndroidApp.compartilharFotos(JSON.stringify([p.id]),legendaProduto(p),!!S.cfg.waBusiness);return}
   abrirLink('https://wa.me/?text='+encodeURIComponent(legendaProduto(p)))}
 
 /* vitrine com fotos */
 function textoVitrine(ps){const bloco=cat=>{const l=ps.filter(p=>p.cat===cat);return l.length?`\n*${cat==='Semijoia'?'Semijoias':cat}*\n`+l.map(p=>`• ${p.nome}${p.tam?' ('+p.tam+')':''}: ${brl(precoPix(p))} no PIX ou 6x de ${brl(preco6x(p)/6)}`).join('\n')+'\n':''};
-  return `✨ *ACKLLA Intimates* ✨\nPeças disponíveis hoje:\n${bloco('Lingerie')}${bloco('Semijoia')}${bloco('Outro')}\nResponda com o nome da peça que eu separo pra você. Frete grátis acima de R$ 150.`+(S.cfg.linkCatalogo?`\n\nVeja todas as peças com foto: ${S.cfg.linkCatalogo}`:'')+(waNum(S.cfg.whatsLoja)?`\nCatálogo no WhatsApp: https://wa.me/c/${waNum(S.cfg.whatsLoja)}`:'')}
+  return `✨ *ACKLLA Intimates* ✨\nPeças disponíveis hoje:\n${bloco('Lingerie')}${bloco('Semijoia')}${bloco('Outro')}\nResponda com o nome da peça que eu separo pra você.\n🚚 *Entrega grátis em Japaratinga, Maragogi e Porto Calvo*, direto na sua casa.`+(S.cfg.linkCatalogo?`\n\nVeja todas as peças com foto: ${S.cfg.linkCatalogo}`:'')+(waNum(S.cfg.whatsLoja)?`\nCatálogo no WhatsApp: https://wa.me/c/${waNum(S.cfg.whatsLoja)}`:'')}
 function vitrineTexto(){const ps=S.produtos.filter(p=>num(p.qtd)>0);if(!ps.length){toast('Nenhum produto em estoque para enviar');return}closeSheet();abrirLink('https://wa.me/?text='+encodeURIComponent(textoVitrine(ps)))}
 function shareVitrine(){
   const ps=S.produtos.filter(p=>num(p.qtd)>0);if(!ps.length){toast('Nenhum produto em estoque para enviar');return}
@@ -666,7 +666,7 @@ function gerarCatalogo(){
   const w=waNum(S.cfg.whatsLoja)||'5582998098750',ig=igUser(S.cfg.instaLoja)||'ackllabuarque';
   const e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const cats=[...new Set(ps.map(p=>p.cat))];
-  const cards=ps.map(p=>{const f=fotoDataUrl(p);const msg=`Olá! Tenho interesse nesta peça do catálogo: ${p.nome}${p.tam?' ('+p.tam+')':''}, ${brl(precoPix(p))} no PIX.`;
+  const cards=ps.map(p=>{const f=fotoDataUrl(p);const msg=`Olá! Tenho interesse nesta peça do catálogo: ${p.nome}${p.tam?' ('+p.tam+')':''}, ${brl(precoPix(p))} no PIX. Quero receber com entrega grátis.`;
     return `<article class="card" data-cat="${e(p.cat)}">${f?`<img src="${f}" alt="${e(p.nome)}" loading="lazy">`:`<div class="sem">ACKLLA</div>`}<div class="info"><h3>${e(p.nome)}</h3>${p.tam?`<p class="tam">${e(p.tam)}</p>`:''}<p class="preco">${e(brl(precoPix(p)))} <small>no PIX</small></p><p class="parc">ou 6x de ${e(brl(preco6x(p)/6))} no cartão</p><a class="quero" href="https://wa.me/${w}?text=${encodeURIComponent(msg)}">Quero esta</a></div></article>`}).join('');
   const hj=new Date().toLocaleDateString('pt-BR');
   const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ACKLLA Intimates · Catálogo</title><meta name="description" content="Peças íntimas e semijoias ACKLLA Intimates. Peça pelo WhatsApp."><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Figtree:wght@400;600&display=swap" rel="stylesheet"><style>
@@ -678,11 +678,12 @@ main{max-width:1100px;margin:0 auto;padding:0 16px 40px;display:grid;grid-templa
 .card{background:#18130F;border:1px solid #35291F;border-radius:16px;overflow:hidden;display:flex;flex-direction:column}.card img,.sem{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#241A12}.sem{display:flex;align-items:center;justify-content:center;font:600 18px Cinzel,serif;letter-spacing:.2em;color:#6B5238}
 .info{padding:10px 12px 12px;display:flex;flex-direction:column;gap:2px;flex:1}h3{margin:0;font:600 18px/1.2 'Cormorant Garamond',serif;color:#F2E4CF}.tam{margin:0;color:#AE9679;font-size:13px}.preco{margin:6px 0 0;font-weight:600;color:#E6BD7A;font-size:17px}.preco small{font-weight:400;color:#AE9679;font-size:12px}.parc{margin:0;color:#AE9679;font-size:12px}
 .quero{margin-top:auto;display:block;text-align:center;background:#1F8F55;color:#fff;text-decoration:none;font-weight:600;border-radius:10px;padding:10px;margin-top:10px}
+.entrega{display:inline-flex;flex-direction:column;align-items:center;gap:3px;margin-top:18px;border:1px solid #B98246;border-radius:14px;padding:10px 20px;background:rgba(214,161,94,.08)}.entrega b{font:600 13px Cinzel,serif;letter-spacing:.25em;color:#E6BD7A;text-transform:uppercase}.entrega span{font-weight:600;font-size:14px;letter-spacing:.06em;color:#F2E4CF}.entrega small{font-size:12px;color:#AE9679}
 footer{text-align:center;color:#AE9679;font-size:13px;padding:0 16px 40px;line-height:1.7}footer a{color:#E6BD7A}
-</style></head><body><header><h1>ACKLLA</h1><div class="sub">INTIMATES</div><div class="frase">Seu brilho, sua essência, sua escolha.</div></header>
+</style></head><body><header><h1>ACKLLA</h1><div class="sub">INTIMATES</div><div class="frase">Seu brilho, sua essência, sua escolha.</div><div class="entrega"><b>Entrega grátis</b><span>Japaratinga · Maragogi · Porto Calvo</span><small>Direto na sua casa. Peça pelo WhatsApp.</small></div></header>
 <nav>${['Todas',...cats].map((c,i)=>`<button class="${i===0?'on':''}" onclick="filtrar(this,'${e(c)}')">${e(c==='Semijoia'?'Semijoias':c==='Outro'?'Outros':c)}</button>`).join('')}</nav>
 <main>${cards}</main>
-<footer>Preços no PIX. Parcelamos em até 6x no cartão. Frete grátis acima de R$ 150.<br><a href="https://wa.me/${w}">WhatsApp (${w.slice(2,4)}) ${w.slice(4,9)}-${w.slice(9)}</a> · <a href="https://www.instagram.com/${e(ig)}/">Instagram @${e(ig)}</a><br>Atualizado em ${hj}</footer>
+<footer>Preços no PIX. Parcelamos em até 6x no cartão.<br><b style="color:#E6BD7A">Entrega grátis em Japaratinga, Maragogi e Porto Calvo.</b><br><a href="https://wa.me/${w}">WhatsApp (${w.slice(2,4)}) ${w.slice(4,9)}-${w.slice(9)}</a> · <a href="https://www.instagram.com/${e(ig)}/">Instagram @${e(ig)}</a><br>Atualizado em ${hj}</footer>
 <script>function filtrar(b,c){document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('.card').forEach(x=>{x.style.display=c==='Todas'||x.dataset.cat===c?'':'none'})}<\/script></body></html>`;
   if(window.AndroidApp&&typeof AndroidApp.compartilharArquivoTipo==='function'){AndroidApp.compartilharArquivoTipo('index.html',html,'text/html');return}
   baixar('index.html',html,'text/html');
